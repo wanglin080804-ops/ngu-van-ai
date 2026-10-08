@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { marked } from 'marked';
 import katex from 'katex';
 import DOMPurify from 'dompurify';
@@ -25,10 +25,10 @@ interface HistoryItem {
 }
 
 const BOOKS = [
-  { label: 'Ngữ văn 6 Tập 1 (Kết nối tri thức)', value: 'SGK NV6 T1.pdf', grade: 'Lớp 6' },
-  { label: 'Ngữ văn 6 Tập 2 (Kết nối tri thức)', value: 'SGK NV6 T2.pdf', grade: 'Lớp 6' },
-  { label: 'Ngữ văn 9 Tập 1 (Kết nối tri thức)', value: 'SGK NV9 T1.pdf', grade: 'Lớp 9' },
-  { label: 'Ngữ văn 9 Tập 2 (Kết nối tri thức)', value: 'SGK NV9 T2.pdf', grade: 'Lớp 9' }
+  { label: 'Ngá»¯ vÄƒn 6 Táº­p 1 (Káº¿t ná»‘i tri thá»©c)', value: 'SGK NV6 T1.pdf', grade: 'Lá»›p 6' },
+  { label: 'Ngá»¯ vÄƒn 6 Táº­p 2 (Káº¿t ná»‘i tri thá»©c)', value: 'SGK NV6 T2.pdf', grade: 'Lá»›p 6' },
+  { label: 'Ngá»¯ vÄƒn 9 Táº­p 1 (Káº¿t ná»‘i tri thá»©c)', value: 'SGK NV9 T1.pdf', grade: 'Lá»›p 9' },
+  { label: 'Ngá»¯ vÄƒn 9 Táº­p 2 (Káº¿t ná»‘i tri thá»©c)', value: 'SGK NV9 T2.pdf', grade: 'Lá»›p 9' }
 ];
 
 export default function App() {
@@ -94,7 +94,7 @@ export default function App() {
   const generateSlidePPTX = async (jsonText: string) => {
     try {
       const slidesData = JSON.parse(jsonText);
-      if (!Array.isArray(slidesData)) throw new Error("Format JSON không hợp lệ");
+      if (!Array.isArray(slidesData)) throw new Error("Format JSON khÃ´ng há»£p lá»‡");
 
       const pptx = new PptxGenJS();
       pptx.layout = 'LAYOUT_16x9';
@@ -122,17 +122,17 @@ export default function App() {
 
       const fileName = `Slide_${lessonName.replace(/[\/\\?%*:|"<>]/g, '_')}.pptx`;
       await pptx.writeFile({ fileName });
-      showToast("Tải xuống PowerPoint thành công!", "success");
+      showToast("Táº£i xuá»‘ng PowerPoint thÃ nh cÃ´ng!", "success");
     } catch (err) {
       console.error(err);
-      showToast("Lỗi khi tạo file PPTX từ dữ liệu: " + err, "error");
-      setResultContent("Dữ liệu JSON sinh ra không hợp lệ:\n\n" + jsonText);
+      showToast("Lá»—i khi táº¡o file PPTX tá»« dá»¯ liá»‡u: " + err, "error");
+      setResultContent("Dá»¯ liá»‡u JSON sinh ra khÃ´ng há»£p lá»‡:\n\n" + jsonText);
     }
   };
 
   const handleGenerate = async () => {
     if (!lessonName.trim()) {
-      showToast("Vui lòng điền tên bài học!", "error");
+      showToast("Vui lÃ²ng Ä‘iá»n tÃªn bÃ i há»c!", "error");
       return;
     }
 
@@ -150,7 +150,7 @@ export default function App() {
         },
         body: JSON.stringify({
           taskType,
-          subject: 'Ngữ văn',
+          subject: 'Ngá»¯ vÄƒn',
           grade: book.grade,
           lessonName: lessonName.trim(),
           extraContext: extraContext.trim(),
@@ -162,7 +162,7 @@ export default function App() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Không thể tạo tài liệu. Vui lòng thử lại!");
+        throw new Error(data.error || "KhÃ´ng thá»ƒ táº¡o tÃ i liá»‡u. Vui lÃ²ng thá»­ láº¡i!");
       }
 
       let generatedText = data.content || '';
@@ -177,14 +177,14 @@ export default function App() {
       if (taskType === 'slide') {
         await generateSlidePPTX(generatedText);
       } else {
-        showToast("🎉 Đã tạo tài liệu thành công!", "success");
+        showToast("ðŸŽ‰ ÄÃ£ táº¡o tÃ i liá»‡u thÃ nh cÃ´ng!", "success");
         setTimeout(() => {
           resultContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 150);
       }
 
     } catch (err: any) {
-      showToast(err.message || "Đã xảy ra lỗi khi tạo tài liệu.", "error");
+      showToast(err.message || "ÄÃ£ xáº£y ra lá»—i khi táº¡o tÃ i liá»‡u.", "error");
     } finally {
       setIsGenerating(false);
     }
@@ -194,10 +194,10 @@ export default function App() {
     if (!resultContent) return;
     navigator.clipboard.writeText(resultContent).then(() => {
       setCopied(true);
-      showToast("✅ Đã copy toàn bộ nội dung!", "success");
+      showToast("âœ… ÄÃ£ copy toÃ n bá»™ ná»™i dung!", "success");
       setTimeout(() => setCopied(false), 2500);
     }).catch(err => {
-      showToast("Lỗi khi copy: " + err, "error");
+      showToast("Lá»—i khi copy: " + err, "error");
     });
   };
 
@@ -239,7 +239,7 @@ export default function App() {
     downloadLink.click();
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(url);
-    showToast("📥 Đã tải file Word (.doc) thành công!", "success");
+    showToast("ðŸ“¥ ÄÃ£ táº£i file Word (.doc) thÃ nh cÃ´ng!", "success");
   };
 
   const handlePrintOrPdf = () => {
@@ -261,10 +261,10 @@ export default function App() {
         {/* Main Header */}
         <div className="text-center mb-10 mt-6 float-anim">
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4 bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 bg-clip-text text-transparent">
-            Ngữ Văn Thầy Út - Kết nối tri thức
+            Ngá»¯ VÄƒn Tháº§y Ãšt - Káº¿t ná»‘i tri thá»©c
           </h1>
           <p className="text-slate-300 text-base sm:text-lg font-light max-w-2xl mx-auto">
-            Hệ thống hỗ trợ tạo Kế hoạch bài dạy, Slide bài giảng (PowerPoint) và Ma trận đề kiểm tra độc quyền cho môn Ngữ Văn lớp 6 & 9.
+            Há»‡ thá»‘ng há»— trá»£ táº¡o Káº¿ hoáº¡ch bÃ i dáº¡y, Slide bÃ i giáº£ng (PowerPoint) vÃ  Ma tráº­n Ä‘á» kiá»ƒm tra Ä‘á»™c quyá»n cho mÃ´n Ngá»¯ VÄƒn lá»›p 6 & 9.
           </p>
         </div>
 
@@ -275,7 +275,7 @@ export default function App() {
             <div>
               <label className="block text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-purple-400" />
-                Chọn Sách Giáo Khoa
+                Chá»n SÃ¡ch GiÃ¡o Khoa
               </label>
               <select
                 value={selectedBook}
@@ -291,16 +291,16 @@ export default function App() {
             <div>
               <label className="block text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
                 <FileText className="w-4 h-4 text-purple-400" />
-                Loại tài liệu cần tạo
+                Loáº¡i tÃ i liá»‡u cáº§n táº¡o
               </label>
               <select
                 value={taskType}
                 onChange={(e) => setTaskType(e.target.value as 'khbd' | 'matran' | 'slide')}
                 className="w-full px-4 py-3 rounded-xl input-glass font-medium text-sm"
               >
-                <option value="khbd">Kế hoạch bài dạy (Công văn 5512)</option>
-                <option value="slide">Slide Bài Giảng (Tải file PowerPoint trực tiếp)</option>
-                <option value="matran">Ma trận & Đặc tả đề kiểm tra</option>
+                <option value="khbd">Káº¿ hoáº¡ch bÃ i dáº¡y (CÃ´ng vÄƒn 5512)</option>
+                <option value="slide">Slide BÃ i Giáº£ng (Táº£i file PowerPoint trá»±c tiáº¿p)</option>
+                <option value="matran">Ma tráº­n & Äáº·c táº£ Ä‘á» kiá»ƒm tra</option>
               </select>
             </div>
           </div>
@@ -308,39 +308,39 @@ export default function App() {
           <div className="mb-6">
             <label className="block text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
               <BookMarked className="w-4 h-4 text-purple-400" />
-              Tên bài học / Chủ đề
+              TÃªn bÃ i há»c / Chá»§ Ä‘á»
             </label>
             <input
               type="text"
               value={lessonName}
               onChange={(e) => setLessonName(e.target.value)}
-              placeholder="VD: Bài 1: Tôi và các bạn - Truyện đồng thoại..."
+              placeholder="VD: BÃ i 1: TÃ´i vÃ  cÃ¡c báº¡n - Truyá»‡n Ä‘á»“ng thoáº¡i..."
               className="w-full px-4 py-3 rounded-xl input-glass text-sm"
             />
           </div>
 
           <div className="mb-6">
             <label className="block text-sm font-semibold text-slate-300 mb-2">
-              Khoảng trang (Tùy chọn)
+              Khoáº£ng trang (TÃ¹y chá»n)
             </label>
             <input
               type="text"
               value={pageRange}
               onChange={(e) => setPageRange(e.target.value)}
-              placeholder="VD: Từ trang 15 đến trang 18"
+              placeholder="VD: Tá»« trang 15 Ä‘áº¿n trang 18"
               className="w-full px-4 py-3 rounded-xl input-glass text-sm"
             />
-            <p className="text-xs text-slate-400 mt-2">Giới hạn số trang giúp AI đọc nội dung SGK chính xác và nhanh chóng hơn.</p>
+            <p className="text-xs text-slate-400 mt-2">Giá»›i háº¡n sá»‘ trang giÃºp AI Ä‘á»c ná»™i dung SGK chÃ­nh xÃ¡c vÃ  nhanh chÃ³ng hÆ¡n.</p>
           </div>
 
           <div className="mb-8">
             <label className="block text-sm font-semibold text-slate-300 mb-2">
-              Yêu cầu bổ sung (Tùy chọn)
+              YÃªu cáº§u bá»• sung (TÃ¹y chá»n)
             </label>
             <textarea
               value={extraContext}
               onChange={(e) => setExtraContext(e.target.value)}
-              placeholder="Ghi chú thêm về yêu cầu cho tài liệu..."
+              placeholder="Ghi chÃº thÃªm vá» yÃªu cáº§u cho tÃ i liá»‡u..."
               className="w-full px-4 py-3 rounded-xl input-glass text-sm h-24 resize-none"
             />
           </div>
@@ -355,12 +355,12 @@ export default function App() {
             {isGenerating ? (
               <>
                 <div className="loader-spinner"></div>
-                Đang phân tích sách và tạo tài liệu...
+                Äang phÃ¢n tÃ­ch sÃ¡ch vÃ  táº¡o tÃ i liá»‡u...
               </>
             ) : (
               <>
                 <Sparkles className="w-5 h-5" />
-                {taskType === 'slide' ? 'Tạo & Tải Xuống Slide PowerPoint' : 'Bắt Đầu Tạo Tài Liệu AI'}
+                {taskType === 'slide' ? 'Táº¡o & Táº£i Xuá»‘ng Slide PowerPoint' : 'Báº¯t Äáº§u Táº¡o TÃ i Liá»‡u AI'}
               </>
             )}
           </button>
@@ -374,10 +374,10 @@ export default function App() {
                 <Check className="w-8 h-8 text-emerald-400" />
               </div>
               <h3 className="font-bold text-2xl text-white mb-3">
-                Tạo tài liệu thành công!
+                Táº¡o tÃ i liá»‡u thÃ nh cÃ´ng!
               </h3>
               <p className="text-slate-300 mb-8 text-center max-w-md text-base">
-                Tài liệu của thầy đã sẵn sàng. Vui lòng chọn định dạng muốn tải xuống.
+                TÃ i liá»‡u cá»§a tháº§y Ä‘Ã£ sáºµn sÃ ng. Vui lÃ²ng chá»n Ä‘á»‹nh dáº¡ng muá»‘n táº£i xuá»‘ng.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
@@ -385,14 +385,14 @@ export default function App() {
                   className="px-6 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Download className="w-5 h-5" />
-                  Tải file Word (.doc)
+                  Táº£i file Word (.doc)
                 </button>
                 <button
                   onClick={handlePrintOrPdf}
                   className="px-6 py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Printer className="w-5 h-5" />
-                  Lưu file PDF
+                  LÆ°u file PDF
                 </button>
               </div>
             </div>
@@ -409,10 +409,11 @@ export default function App() {
 
         {/* Footer */}
         <div className="text-center pb-8 pt-4 text-slate-400/80 text-sm no-print">
-          <p className="font-semibold text-slate-300 mb-1">Thầy Trầm Thanh Út</p>
-          <p>ĐVCT: Trường THCS Phước Hưng</p>
+          <p className="font-semibold text-slate-300 mb-1">Tháº§y Tráº§m Thanh Ãšt</p>
+          <p>ÄVCT: TrÆ°á»ng THCS PhÆ°á»›c HÆ°ng</p>
         </div>
       </div>
     </div>
   );
 }
+
