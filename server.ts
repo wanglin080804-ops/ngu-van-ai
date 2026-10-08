@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -284,9 +284,15 @@ app.post('/api/generate', upload.single('file'), async (req, res) => {
     }
 
     return res.json({ content: fullText });
-  } catch (err: any) {
-    console.error('Lỗi khi sinh nội dung:', err);
-    const msg = err?.message || 'Lỗi kết nối máy chủ hoặc API Key không hợp lệ.';
+    } catch (err: any) {
+    console.error('Lỗi API:', err);
+    let msg = err?.message || 'Lỗi kết nối máy chủ hoặc API Key không hợp lệ.';
+    
+    // Check for Quota/Rate Limit errors
+    if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('exhausted')) {
+      msg = 'Hệ thống đang bị quá tải hoặc Key của bạn đã hết lượt tạo miễn phí (Lỗi 429 - Quota Exceeded). Vui lòng thử lại sau khoảng 1-2 phút (để hồi phục token) hoặc sử dụng API Key cá nhân của bạn để tiếp tục.';
+    }
+
     return res.status(500).json({ error: msg });
   }
 });
@@ -348,9 +354,16 @@ Tuyệt đối KHÔNG xuất thêm bất kỳ văn bản nào khác ngoài JSON,
       console.error('Lỗi parse JSON trong lessons:', parseErr, raw);
       return res.json({ lessons: [] });
     }
-  } catch (err: any) {
-    console.error('Lỗi khi tải danh sách bài học:', err);
-    return res.status(500).json({ error: err?.message || 'Không thể tải danh sách bài học.' });
+    } catch (err: any) {
+    console.error('Lỗi API:', err);
+    let msg = err?.message || 'Lỗi kết nối máy chủ hoặc API Key không hợp lệ.';
+    
+    // Check for Quota/Rate Limit errors
+    if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('exhausted')) {
+      msg = 'Hệ thống đang bị quá tải hoặc Key của bạn đã hết lượt tạo miễn phí (Lỗi 429 - Quota Exceeded). Vui lòng thử lại sau khoảng 1-2 phút (để hồi phục token) hoặc sử dụng API Key cá nhân của bạn để tiếp tục.';
+    }
+
+    return res.status(500).json({ error: msg });
   }
 });
 
@@ -379,3 +392,4 @@ async function startServer() {
 }
 
 startServer();
+
