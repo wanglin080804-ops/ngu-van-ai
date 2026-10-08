@@ -1,0 +1,381 @@
+import express from 'express';
+import multer from 'multer';
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { GoogleGenAI } from '@google/genai';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+app.use(express.json({ limit: '50mb' }));
+
+const upload = multer({ dest: 'uploads/' });
+
+function resolveApiKey(userKey?: string): string {
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '' && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY') {
+    return process.env.GEMINI_API_KEY.trim();
+  }
+  return '';
+}
+
+const SYSTEM_PROMPT_KHBD = `Bạn là chuyên gia cố vấn phương pháp giảng dạy xuất sắc cho giáo viên THCS-THPT Việt Nam.
+Nhiệm vụ của bạn là soạn KẾ HOẠCH BÀI DẠY (KHBD) bám sát tuyệt đối Phụ lục IV Công văn 5512/BGDĐT-GDTrH, Chương trình Giáo dục Phổ thông 2018 (GDPT 2018) và tích hợp Năng lực số (theo Công văn 3456/BGDĐT-GDTrH).
+
+YÊU CẦU CẤU TRÚC CHUẨN MỰC:
+# KẾ HOẠCH BÀI DẠY: [TÊN BÀI HỌC]
+**Môn học / Hoạt động giáo dục:** [Tên môn học] - **Khối lớp:** [Lớp]
+**Bộ sách:** [Bộ sách nếu có]
+**Thời lượng thực hiện:** [Số tiết dự kiến, ví dụ: 2 tiết / 90 phút]
+
+## I. MỤC TIÊU DẠY HỌC
+### 1. Về kiến thức
+- Nêu rõ các kiến thức trọng tâm học sinh cần nhận biết, hiểu và vận dụng trong bài học.
+
+### 2. Về năng lực
+- **Năng lực chung:**
+  + Tự chủ và tự học: Tự giác tìm hiểu tài liệu, giải quyết nhiệm vụ cá nhân.
+  + Giao tiếp và hợp tác: Làm việc nhóm, trao đổi, phản biện và báo cáo sản phẩm.
+  + Giải quyết vấn đề và sáng tạo: Xử lý các tình huống thực tiễn gắn với bài học.
+- **Năng lực đặc thù:** Các năng lực chuyên biệt của bộ môn (ngôn ngữ, toán học, khoa học, thẩm mỹ,...).
+- **Năng lực số (Tích hợp theo CV 3456):**
+  + Tìm kiếm, khai thác học liệu số và công cụ hỗ trợ trực quan (phần mềm GeoGebra, mô phỏng PhET, slide tương tác, Quizizz, Padlet,...).
+  + Tạo lập hoặc chia sẻ sản phẩm học tập trên không gian số có trách nhiệm.
+
+### 3. Về phẩm chất
+- Yêu nước, nhân ái, chăm chỉ, trung thực, trách nhiệm (liên hệ gắn liền với nội dung bài học).
+
+---
+
+## II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU
+1. **Giáo viên chuẩn bị:** Kế hoạch bài dạy, bài giảng điện tử (PowerPoint/Canva), phiếu học tập (PHT), học liệu số (video clip, mô phỏng), thiết bị trình chiếu, bảng phụ.
+2. **Học sinh chuẩn bị:** Sách giáo khoa, vở ghi chép, dụng cụ học tập, chuẩn bị nội dung theo phân công trước bài mới.
+
+---
+
+## III. TIẾN TRÌNH DẠY HỌC
+Bao gồm 4 hoạt động chính theo đúng Công văn 5512:
+
+### 1. HOẠT ĐỘNG 1: MỞ ĐẦU (KHỞI ĐỘNG)
+- **a) Mục tiêu:** Kích hoạt kiến thức nền tảng, tạo tâm thế hứng thú, xác định vấn đề trọng tâm cần giải quyết.
+- **b) Nội dung:** Tình huống thực tế / câu hỏi kích thích tư duy / trò chơi học tập.
+- **c) Sản phẩm:** Câu trả lời của học sinh, kết quả tham gia trò chơi hoặc suy nghĩ dự đoán.
+- **d) Tổ chức thực hiện:**
+  + *Bước 1 (Chuyển giao nhiệm vụ):* GV giao nhiệm vụ...
+  + *Bước 2 (Thực hiện nhiệm vụ):* HS suy nghĩ cá nhân / nhóm...
+  + *Bước 3 (Báo cáo, thảo luận):* Đại diện HS chia sẻ, các HS khác nhận xét, bổ sung...
+  + *Bước 4 (Kết luận, nhận định):* GV tổng kết, dẫn dắt vào bài mới...
+
+### 2. HOẠT ĐỘNG 2: HÌNH THÀNH KIẾN THỨC MỚI
+*(Chia thành các đơn vị kiến thức cụ thể 2.1, 2.2,... nếu bài có nhiều phần)*
+- **a) Mục tiêu:** ...
+- **b) Nội dung:** Nhiệm vụ học tập chi tiết, phiếu học tập số...
+- **c) Sản phẩm:** Câu trả lời đầy đủ, nội dung kiến thức cốt lõi cần ghi vở.
+- **d) Tổ chức thực hiện (Đủ 4 bước: Chuyển giao - Thực hiện - Báo cáo, thảo luận - Kết luận, chốt kiến thức):**
+
+### 3. HOẠT ĐỘNG 3: LUYỆN TẬP
+- **a) Mục tiêu:** Củng cố, rèn luyện kỹ năng và khắc sâu kiến thức vừa học.
+- **b) Nội dung:** Hệ thống câu hỏi, bài tập định lượng/định tính, bài tập trắc nghiệm hoặc bài tập vận dụng nhanh.
+- **c) Sản phẩm:** Lời giải, đáp án, bảng kết quả của học sinh.
+- **d) Tổ chức thực hiện (Đủ 4 bước Chuyển giao - Thực hiện - Báo cáo - Đánh giá):**
+
+### 4. HOẠT ĐỘNG 4: VẬN DỤNG VÀ MỞ RỘNG
+- **a) Mục tiêu:** Vận dụng kiến thức vào giải quyết vấn đề thực tiễn đời sống hoặc liên môn.
+- **b) Nội dung:** Nhiệm vụ thực tế, dự án nhỏ hoặc tìm tòi mở rộng tại nhà.
+- **c) Sản phẩm:** Báo cáo nhỏ, poster, video ngắn hoặc lời giải bài toán thực tiễn.
+- **d) Tổ chức thực hiện (Hướng dẫn HS thực hiện ngoài giờ lên lớp hoặc tại lớp):**
+
+---
+
+## IV. PHỤ LỤC & HỒ SƠ DẠY HỌC
+- **Phiếu học tập (PHT số 1, PHT số 2):** Thiết kế bảng biểu rõ ràng.
+- **Bảng kiểm / Rubric đánh giá:** Tiêu chí đánh giá hoạt động nhóm / sản phẩm của học sinh.
+
+*QUY CHUẨN TRÌNH BÀY:*
+- Sử dụng ngôn ngữ sư phạm chuẩn mực Việt Nam.
+- Dùng Markdown đẹp mắt, in đậm rõ ràng, các bảng biểu cân đối.
+- Công thức Toán/Khoa học phải viết dưới dạng LaTeX chuẩn: $x^2 + y^2 = r^2$ hoặc $$...$$.`;
+
+const SYSTEM_PROMPT_MATRAN = `Bạn là chuyên gia khảo thí, đo lường và đánh giá giáo dục hàng đầu cho khối THCS-THPT Việt Nam.
+Nhiệm vụ của bạn là xây dựng MA TRẬN VÀ BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KỲ bám sát tuyệt đối quy định tại Công văn 7991/BGDĐT-GDTrH và Chương trình GDPT 2018.
+
+YÊU CẦU CẤU TRÚC CHI TIẾT:
+# MA TRẬN VÀ BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KỲ
+**Môn học:** [Tên môn học] - **Khối lớp:** [Lớp]
+**Thời gian làm bài:** [45 phút / 60 phút / 90 phút]
+**Hình thức kiểm tra:** Kết hợp Trắc nghiệm khách quan và Tự luận (hoặc theo cấu trúc hiện hành).
+
+---
+
+## PHẦN I. KHUNG MA TRẬN ĐỀ KIỂM TRA (Theo CV 7991)
+Xây dựng bảng Markdown đầy đủ, chuẩn xác các cột sau:
+| TT | Chủ đề / Mạch kiến thức | Đơn vị kiến thức / Kĩ năng | Nhận biết (TNKQ / TL) | Thông hiểu (TNKQ / TL) | Vận dụng (TNKQ / TL) | Vận dụng cao (TNKQ / TL) | Tổng số câu (TNKQ / TL) | Tổng điểm | Tỉ lệ % |
+*(Đảm bảo tổng cộng điểm số = 10,0 điểm; phân bố tỉ lệ thường là: 40% Nhận biết - 30% Thông hiểu - 20% Vận dụng - 10% Vận dụng cao, hoặc điều chỉnh thích hợp)*.
+
+---
+
+## PHẦN II. BẢN ĐẶC TẢ ĐỀ KIỂM TRA (Theo CV 7991)
+Xây dựng bảng Markdown chi tiết:
+| TT | Chủ đề | Đơn vị kiến thức | Mức độ đánh giá | Yêu cầu cần đạt | Số câu hỏi theo mức độ (NB / TH / VD / VDC) | Câu hỏi số trong đề |
+*(Mỗi mức độ phải ghi rõ hành vi đo lường cụ thể của học sinh, bám sát Chương trình GDPT 2018)*.
+
+---
+
+## PHẦN III. GỢI Ý ĐỀ KIỂM TRA MINH HỌA & HƯỚNG DẪN CHẤM
+1. **Đề kiểm tra minh họa:**
+- Phần I: Trắc nghiệm khách quan (Câu hỏi 4 lựa chọn, Câu hỏi Đúng/Sai, hoặc Trả lời ngắn theo định dạng mới).
+- Phần II: Tự luận (nêu rõ các câu hỏi và biểu điểm tương ứng).
+2. **Đáp án và thang điểm hướng dẫn chấm:**
+- Bảng đáp án trắc nghiệm.
+- Hướng dẫn chấm chi tiết phần tự luận với các bước cho điểm rõ ràng.
+
+*QUY CHUẨN:* Trình bày Markdown Table thẳng thớm, đẹp mắt, công thức toán khoa học dùng LaTeX ($...$).`;
+
+const SYSTEM_PROMPT_SLIDE = `Bạn là chuyên gia thiết kế bài giảng điện tử (Slide Powerpoint) chuyên nghiệp cho giáo viên.
+Nhiệm vụ của bạn là soạn KỊCH BẢN CHI TIẾT TỪNG SLIDE dựa trên nội dung sách giáo khoa được cung cấp, bám sát nội dung và phân bổ thời gian hợp lý.
+
+YÊU CẦU QUAN TRỌNG NHẤT:
+BẠN PHẢI TRẢ VỀ DUY NHẤT MỘT MẢNG JSON. TUYỆT ĐỐI KHÔNG TRẢ VỀ BẤT KỲ VĂN BẢN NÀO BÊN NGOÀI MẢNG JSON, KHÔNG SỬ DỤNG DẤU QUOTE BACKTICKS (như \`\`\`json).
+
+Cấu trúc JSON yêu cầu:
+[
+  {
+    "title": "Tiêu đề slide 1",
+    "content": "Nội dung chính trên slide, dùng dấu \\n để xuống dòng, viết ngắn gọn dạng bullet points",
+    "notes": "Ghi chú dành cho giáo viên (lời dẫn, đáp án...)"
+  },
+  {
+    "title": "Tiêu đề slide 2",
+    "content": "...",
+    "notes": "..."
+  }
+]
+
+1. KIẾN TRÚC SLIDE
+- Không cố định số slide; chọn theo số tiết, thời gian, độ khó, hoạt động và đặc điểm môn học.
+- Cấu trúc tham khảo: Mở đầu → Khởi động → Mục tiêu → Khám phá/Hình thành kiến thức → Luyện tập → Vận dụng → Củng cố → Kiểm tra nhanh → Nhiệm vụ tiếp theo.
+
+2. CHUẨN MỰC TRÌNH BÀY
+- Sử dụng câu ngắn gọn, từ khóa rõ ràng (khoảng 10-12 từ/dòng).
+- Tuyệt đối không biến slide thành bản sao của SGK hay đoạn văn dài.
+- Nội dung content là những gì chiếu lên màn hình, notes là những gì giáo viên cần nói.`;
+
+// API route: Generate Lesson Plan / Matrix
+
+
+app.post('/api/generate', upload.single('file'), async (req, res) => {
+  try {
+    const { taskType, subject, grade, lessonName, extraContext, apiKey: userKey, selectedBookFile, pageRange } = req.body;
+
+    if (!subject || !grade || !lessonName) {
+      return res.status(400).json({ error: 'Vui lòng cung cấp đầy đủ Môn học, Khối lớp và Tên bài học.' });
+    }
+
+    const key = resolveApiKey(userKey);
+    if (!key) {
+      return res.status(400).json({ error: 'Chưa có Gemini API Key. Vui lòng nhập API Key hoặc chọn API Test.' });
+    }
+
+    const ai = new GoogleGenAI({
+      apiKey: key,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
+
+    const isKhbd = taskType === 'khbd';
+    const isSlide = taskType === 'slide';
+    const sysPrompt = isKhbd ? SYSTEM_PROMPT_KHBD : (isSlide ? SYSTEM_PROMPT_SLIDE : SYSTEM_PROMPT_MATRAN);
+    
+    let docTypeName = '';
+    if (isKhbd) docTypeName = 'KẾ HOẠCH BÀI DẠY (KHBD - Giáo án theo Công văn 5512 và CV 3456)';
+    else if (isSlide) docTypeName = 'BÀI GIẢNG ĐIỆN TỬ (PowerPoint)';
+    else docTypeName = 'MA TRẬN VÀ BẢN ĐẶC TẢ ĐỀ KIỂM TRA (Theo Công văn 7991)';
+
+    let userPrompt = `Hãy soạn tài liệu giáo dục hoàn chỉnh cho giáo viên:
+- Loại tài liệu: ${docTypeName}
+- Môn học: ${subject}
+- Khối lớp: ${grade}
+- Tên bài học / Chủ đề: ${lessonName}
+- Yêu cầu bổ sung đặc biệt từ giáo viên: ${extraContext ? extraContext : 'Soạn chi tiết, đầy đủ các hoạt động, thực tế, khả thi trong giảng dạy.'}`;
+
+    if (selectedBookFile) {
+        const filePath = path.join(__dirname, 'SGK', selectedBookFile);
+        if (fs.existsSync(filePath)) {
+            if (pageRange) {
+                userPrompt += `\n\nCHÚ Ý QUAN TRỌNG: Hãy CHỈ sử dụng nội dung từ file đính kèm (tập trung vào đoạn ${pageRange}) để soạn bài. Tuyệt đối bám sát nội dung file, không bịa thêm kiến thức ngoài.`;
+            } else {
+                userPrompt += `\n\nCHÚ Ý QUAN TRỌNG: Hãy sử dụng nội dung từ file đính kèm để soạn bài. Tuyệt đối bám sát nội dung file.`;
+            }
+        } else {
+            return res.status(400).json({ error: 'Không tìm thấy sách giáo khoa yêu cầu trên máy chủ.' });
+        }
+    }
+
+    if (!isSlide) {
+        userPrompt += `\n\nYêu cầu thực hiện:
+1. Viết cực kỳ chi tiết, chỉn chu, chuyên nghiệp, không tóm tắt qua loa.
+2. Đúng mẫu biểu hiện hành của Bộ Giáo dục và Đào tạo Việt Nam.
+3. Sử dụng Markdown rõ ràng và công thức Toán/Khoa học (nếu có) bằng LaTeX kẹp giữa $...$ hoặc $$...$$.`;
+    }
+
+    console.log("Bat dau goi API tao noi dung...");
+    let aiContents: any = userPrompt;
+    
+    let uploadResult;
+    if (selectedBookFile) {
+       const filePath = path.join(__dirname, 'SGK', selectedBookFile);
+       console.log("Dang upload file len Gemini API tu duong dan: ", filePath);
+       uploadResult = await ai.files.upload({
+          file: filePath,
+          config: {
+             mimeType: 'application/pdf',
+          }
+       });
+       console.log("Upload file thanh cong, uri:", uploadResult.uri);
+       aiContents = [
+           {
+               fileData: {
+                   mimeType: 'application/pdf',
+                   fileUri: uploadResult.uri
+               }
+           },
+           userPrompt
+       ];
+    }
+
+    const modelsToTry = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-pro-latest'];
+    let responseStream;
+    let fullText = '';
+    let success = false;
+    let lastError: any = null;
+
+    for (const modelName of modelsToTry) {
+        try {
+            console.log(`Dang thu model: ${modelName}...`);
+            const response = await ai.models.generateContent({
+              model: modelName,
+              contents: aiContents,
+              config: {
+                systemInstruction: sysPrompt,
+                temperature: 0.7,
+              },
+            });
+            
+            fullText = response.text || '';
+            success = true;
+            console.log(`Goi generateContent thanh cong voi ${modelName}!`);
+            break; // Thoát khỏi vòng lặp nếu sinh thành công
+        } catch (err: any) {
+            console.warn(`Model ${modelName} that bai (co the do qua tai):`, err.message || err);
+            lastError = err;
+        }
+    }
+
+    if (!success) {
+        console.error("Tat ca cac model deu that bai.");
+        throw lastError;
+    }
+
+    return res.json({ content: fullText });
+  } catch (err: any) {
+    console.error('Lỗi khi sinh nội dung:', err);
+    const msg = err?.message || 'Lỗi kết nối máy chủ hoặc API Key không hợp lệ.';
+    return res.status(500).json({ error: msg });
+  }
+});
+
+// API route: Auto-suggest Lessons list
+app.post('/api/lessons', async (req, res) => {
+  try {
+    const { subject, grade, bookSet, apiKey: userKey } = req.body;
+    if (!subject || !grade) {
+      return res.status(400).json({ error: 'Cần có Môn học và Khối lớp.' });
+    }
+
+    try {
+      const lessonsDataPath = path.resolve(__dirname, 'data', 'lessons.json');
+      if (fs.existsSync(lessonsDataPath)) {
+        const lessonsData = JSON.parse(fs.readFileSync(lessonsDataPath, 'utf-8'));
+        if (lessonsData[subject] && lessonsData[subject][grade] && lessonsData[subject][grade].length > 0) {
+          console.log(`Lấy mục lục từ file gốc cho ${subject} - ${grade}`);
+          return res.json({ lessons: lessonsData[subject][grade] });
+        }
+      }
+    } catch (e) {
+      console.log('Không đọc được file tĩnh lessons.json, chuyển sang AI.', e);
+    }
+
+    const key = resolveApiKey(userKey);
+    if (!key) {
+      return res.status(400).json({ error: 'Chưa có API Key.' });
+    }
+
+    const ai = new GoogleGenAI({
+      apiKey: key,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
+
+    const prompt = `Bạn là chuyên gia giáo dục phổ thông Việt Nam. Hãy liệt kê tất cả các bài học trong sách giáo khoa môn ${subject} ${grade} bộ ${bookSet || 'hiện hành'} của Chương trình GDPT 2018 Việt Nam.
+Trả về DUY NHẤT một mảng JSON các chuỗi tên bài học (VD: ["Bài 1: Mệnh đề", "Bài 2: Tập hợp và các phép toán trên tập hợp", ...]).
+Tuyệt đối KHÔNG xuất thêm bất kỳ văn bản nào khác ngoài JSON, không dùng ký hiệu code block markdown.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        temperature: 0.1,
+      },
+    });
+
+    let raw = response.text || '[]';
+    raw = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+    try {
+      const lessons = JSON.parse(raw);
+      return res.json({ lessons: Array.isArray(lessons) ? lessons : [] });
+    } catch (parseErr) {
+      console.error('Lỗi parse JSON trong lessons:', parseErr, raw);
+      return res.json({ lessons: [] });
+    }
+  } catch (err: any) {
+    console.error('Lỗi khi tải danh sách bài học:', err);
+    return res.status(500).json({ error: err?.message || 'Không thể tải danh sách bài học.' });
+  }
+});
+
+// Setup Vite middleware in dev or express.static in prod
+async function startServer() {
+  const isProd = process.env.NODE_ENV === 'production';
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+  if (!isProd) {
+    const { createServer: createViteServer } = await import('vite');
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  } else {
+    app.use(express.static(path.resolve(__dirname, 'dist')));
+    app.get('*', (_req, res) => {
+      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+    });
+  }
+
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`Server đang chạy tại http://0.0.0.0:${port}`);
+  });
+}
+
+startServer();
