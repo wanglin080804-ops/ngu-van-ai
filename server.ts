@@ -289,8 +289,9 @@ app.post('/api/generate', upload.single('file'), async (req, res) => {
     let msg = err?.message || 'Lỗi kết nối máy chủ hoặc API Key không hợp lệ.';
     
     // Check for Quota/Rate Limit errors
-    if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('exhausted')) {
-      msg = 'Hệ thống đang bị quá tải hoặc Key của bạn đã hết lượt tạo miễn phí (Lỗi 429 - Quota Exceeded). Vui lòng thử lại sau khoảng 1-2 phút (để hồi phục token) hoặc sử dụng API Key cá nhân của bạn để tiếp tục.';
+    if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('exhausted') || msg.toLowerCase().includes('rate limit')) {
+      msg = 'Hệ thống đã đạt giới hạn Token API miễn phí. Vui lòng chờ thời gian hồi chiêu hoặc sử dụng API Key cá nhân.';
+      return res.status(429).json({ error: msg, cooldown: 60 });
     }
 
     return res.status(500).json({ error: msg });
@@ -359,8 +360,9 @@ Tuyệt đối KHÔNG xuất thêm bất kỳ văn bản nào khác ngoài JSON,
     let msg = err?.message || 'Lỗi kết nối máy chủ hoặc API Key không hợp lệ.';
     
     // Check for Quota/Rate Limit errors
-    if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('exhausted')) {
-      msg = 'Hệ thống đang bị quá tải hoặc Key của bạn đã hết lượt tạo miễn phí (Lỗi 429 - Quota Exceeded). Vui lòng thử lại sau khoảng 1-2 phút (để hồi phục token) hoặc sử dụng API Key cá nhân của bạn để tiếp tục.';
+    if (msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('exhausted') || msg.toLowerCase().includes('rate limit')) {
+      msg = 'Hệ thống đã đạt giới hạn Token API miễn phí. Vui lòng chờ thời gian hồi chiêu hoặc sử dụng API Key cá nhân.';
+      return res.status(429).json({ error: msg, cooldown: 60 });
     }
 
     return res.status(500).json({ error: msg });
@@ -392,4 +394,6 @@ async function startServer() {
 }
 
 startServer();
+
+
 
